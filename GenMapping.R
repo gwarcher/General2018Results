@@ -39,6 +39,78 @@ write.csv(sos, "Sos.csv", row.names = FALSE)
 
 
 
+
+#################Governor############################
+
+
+Governor <- AZ_Precinct_Results %>%
+  filter(contestLongName == "Governor") %>%
+  select(contestLongName, choiceName, Pctcd, precinctVotes)%>%
+  spread(choiceName, precinctVotes) %>%
+  mutate(total = rowSums(.[3:4])) %>%
+  mutate(color = case_when(
+    (`Ducey, Doug` / total) - (`Garcia, David` /total) >= .6 ~ "#660000",
+    (`Ducey, Doug` / total) - (`Garcia, David` /total) >= .5 & (`Ducey, Doug` / total) - (`Garcia, David` /total) < .6 ~ "#881111",
+    (`Ducey, Doug` / total) - (`Garcia, David` /total) >= .4 & (`Ducey, Doug` / total) - (`Garcia, David` /total) < .5 ~ "#aa2222",
+    (`Ducey, Doug` / total) - (`Garcia, David` /total) >= .3 & (`Ducey, Doug` / total) - (`Garcia, David` /total) < .4 ~ "#cc3333",
+    (`Ducey, Doug` / total) - (`Garcia, David` /total) >= .2 & (`Ducey, Doug` / total) - (`Garcia, David` /total) < .3 ~ "#eb4747",
+    (`Ducey, Doug` / total) - (`Garcia, David` /total) >= .1 & (`Ducey, Doug` / total) - (`Garcia, David` /total) < .2 ~ "#f58181",
+    (`Ducey, Doug` / total) - (`Garcia, David` /total) >= .05 & (`Ducey, Doug` / total) - (`Garcia, David` /total) < .1 ~ "#ffaaae",
+    (`Ducey, Doug` / total) - (`Garcia, David` /total) >= 0 & (`Ducey, Doug` / total) - (`Garcia, David` /total) < .05 ~ "#ffd5d9",
+    (`Garcia, David` /total) - (`Ducey, Doug` / total)  >= .6 ~ "#000066",
+    (`Garcia, David` /total) - (`Ducey, Doug` / total)  >= .5 & (`Garcia, David` /total) - (`Ducey, Doug` / total)  < .6 ~ "#111188",
+    (`Garcia, David` /total) - (`Ducey, Doug` / total)  >= .4 & (`Garcia, David` /total) - (`Ducey, Doug` / total)  < .5 ~ "#2222aa",
+    (`Garcia, David` /total) - (`Ducey, Doug` / total)  >= .3 & (`Garcia, David` /total) - (`Ducey, Doug` / total)  < .4 ~ "#3333cc",
+    (`Garcia, David` /total) - (`Ducey, Doug` / total)  >= .2 & (`Garcia, David` /total) - (`Ducey, Doug` / total)  < .3 ~ "#4747eb",
+    (`Garcia, David` /total) - (`Ducey, Doug` / total)  >= .1 & (`Garcia, David` /total) - (`Ducey, Doug` / total)  < .2 ~ "#8181f5",
+    (`Garcia, David` /total) - (`Ducey, Doug` / total)  >= .05 & (`Garcia, David` /total) - (`Ducey, Doug` / total)  < .1 ~ "#aaaeff",
+    (`Garcia, David` /total) - (`Ducey, Doug` / total)  >= 0 & (`Garcia, David` /total) - (`Ducey, Doug` / total)  < .05 ~ "#d5d9ff"
+  ))
+
+write.csv(Governor, "governor.csv", row.names = FALSE)
+
+
+
+
+
+pct <- shp
+pct@data <- left_join(pct@data, Governor, by=c("pctnum" = "Pctcd"))
+
+
+popupdata=pct
+
+popupdata$label <-   popupdata$label <- paste0('<h4>', popupdata$precinctna, '</h4>',
+                                               '<h5>', popupdata$pctnum, '</h5>',
+                                               "County: ", popupdata$COUNTY, '</br>',
+                                               "Congressional: ", popupdata$DistCD, '</br>',
+                                               "Legislative: ", popupdata$DistLD, '</br>',
+                                               "Total Votes: ", popupdata$total, '</br>',
+                                               "Ducey: ", popupdata$`Ducey, Doug`, " (", percent(popupdata$`Ducey, Doug` / popupdata$total), ")", '</br>',
+                                               "Garcia: ", popupdata$`Garcia, David`, " (" ,percent(popupdata$`Garcia, David` / popupdata$total), ")",'</br>', ")", '</br>') %>%
+  lapply(HTML)
+
+g <- leaflet(popupdata) %>%
+  setView(lng= -111.093735, lat = 34.048927, zoom = 7) %>%
+  addProviderTiles(provider = providers$Stamen.TonerLite) %>%
+  addPolygons(stroke = TRUE, weight = 2, color = popupdata$color, fillOpacity = 0.7, smoothFactor = 0.5, label=popupdata$label,  
+              labelOptions = labelOptions(opacity = 0.85,
+                                          style = list(
+                                            "font-size" = "12px"
+                                          ))) %>%
+  addLegend("bottomright",
+            colors = c("#660000", "#881111", "#aa2222", "#cc3333", "#eb4747", "#f58181", "#ffaaae", "#ffd5d9",
+                       "#000066", "#111188", "#2222aa", "#3333cc", "#4747eb", "#8181f5", "#aaaeff", "#d5d9ff",
+                       "DFDFDF"),
+            labels = c("Ducey +60%", "+50%", "+40%", "+30%", "+20%", "+10%", "+5%", "+0%",
+                       "Garcia + 60%",  "+50%", "+40%", "+30%", "+20%", "+10%", "+5%", "+0%",
+                       "No Returns"),
+            title = "Ducey v Garcia",
+            opacity = 0.8)
+
+
+
+
+
 ####SENATE  ############
 
 
