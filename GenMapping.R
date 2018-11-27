@@ -91,7 +91,7 @@ popupdata$label <-   popupdata$label <- paste0('<h4>', popupdata$precinctna, '</
 s <- leaflet(popupdata) %>%
   setView(lng= -111.093735, lat = 34.048927, zoom = 7) %>%
   addProviderTiles(provider = providers$Stamen.TonerLite) %>%
-  addPolygons(stroke = TRUE, weight = 2, color = popupdata$color, fillOpacity = 0.5, smoothFactor = 0.5, label=popupdata$label,  
+  addPolygons(stroke = TRUE, weight = 2, color = popupdata$color, fillOpacity = 0.7, smoothFactor = 0.5, label=popupdata$label,  
               labelOptions = labelOptions(opacity = 0.85,
                                           style = list(
                                             "font-size" = "12px"
@@ -150,4 +150,12 @@ cc <- leaflet(pct) %>%
                                           style = list(
                                             "font-size" = "12px"
                                           )))
+
+
+
+
+
+#######Ducey/Sinema#############
+
+
   
