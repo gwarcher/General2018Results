@@ -361,4 +361,113 @@ og <- leaflet(popupdata) %>%
             opacity = 0.8)
 
 write.csv(Ducey_Sinema, "ducey_sinema.csv", row.names = FALSE)
+
+
+
+
+#################################Statistical Maps ##########################################
+
+
+#############DEM Standard Dev #####################################
+
+dem_sd <- AZ_Precinct_Results %>%
+  filter(districtName != 'Arizona Supreme Court' & districtName != 'Court of Appeals Division II (Pima)'
+         & districtName != 'Court of Appeals Division I (Maricopa)' & districtName != 'Ballot Measure Statewide') %>%
+  select(Pctcd, contestLongName, partyShortName, precinctVotes) %>%
+  mutate(contestLongName = ifelse(substr(contestLongName,0, 20) == "State Representative", "State Rep", contestLongName),
+         contestLongName = ifelse(substr(contestLongName,0, 13 ) == "State Senator", "State Senator", contestLongName),
+         contestLongName = ifelse(substr(contestLongName, 0, 31) == "U.S. Representative in Congress", "Congress", contestLongName)) %>%
+  filter(contestLongName != 'State Rep' & contestLongName != 'Corporation Commissioner') %>%
+  unite(.,contestLongName, partyShortName, col="contestParty", sep = "_") %>%
+  spread(.,contestParty, precinctVotes) %>%
+  mutate_all(funs(replace(., is.na(.), 0))) %>%
+  mutate(dem_gov = Governor_DEM / rowSums(.[7:9]),
+         dem_sen = `U.S. Senator_DEM` / rowSums(.[23:25]),
+         dem_ag = `Attorney General_DEM` / rowSums(.[2:3]),
+         dem_cong = Congress_DEM / rowSums(.[4:6]),
+         dem_sos = `Secretary of State_DEM` / rowSums(.[10:11]),
+         dem_sm = `State Mine Inspector_DEM` / rowSums(.[12:13]),
+         dem_st_sen = `State Senator_DEM` / rowSums(.[14:18]),
+         dem_suped = `Superintendent of Public Instruction_DEM` / rowSums(.[21:22]),
+         dem_treas = `State Treasurer_DEM` / rowSums(.[19:20])) %>%
+  mutate(dem_st_sen = ifelse(dem_st_sen >= 1, NA, dem_st_sen),
+         dem_st_sen = ifelse(dem_st_sen <= 0, NA, dem_st_sen)) %>%
+  #mutate(dem_stdev = rowSds(., rows = c(26:34), na.rm = TRUE))
+  mutate(sd_dem = apply(.[26:34], 1, sd, na.rm = TRUE)) %>%
+  mutate(sd_mean = apply(.[26:34], 1, mean, na.rm = TRUE)) %>%
+  mutate(gov_diff = dem_gov - sd_mean,
+         ussen_diff = dem_sen - sd_mean) %>%
+  left_join(., az_precincts, by="Pctcd") %>%
+  select(Pctcd, County, DistCD, DistLD, dem_gov, dem_sen, dem_ag, dem_cong, dem_sos, dem_sm, dem_st_sen, dem_suped, dem_treas, sd_dem, sd_mean, gov_diff, ussen_diff)
+
+
+
+
+pct <- shp
+pct@data <- left_join(pct@data, dem_sd, by=c("pctnum" = "Pctcd"))
+
+
+popupdata=pct
+
+popupdata$label <-   popupdata$label <- paste0('<h4>', popupdata$precinctna, '</h4>',
+                                               '<h5>', popupdata$pctnum, '</h5>',
+                                               "County: ", popupdata$County, '</br>',
+                                               "Congressional: ", popupdata$DistCD, '</br>',
+                                               "Legislative: ", popupdata$DistLD, '</br>',
+                                               "Mean: ", popupdata$sd_mean, '</br>',
+                                               "Dem Gov: ", popupdata$gov_diff, '</br>',
+                                               "Dem Senate: ", popupdata$ussen_diff,'</br>') %>%
+  lapply(HTML)
+
+bins <- c(-.5, -.1, -.05, -.025, 0, .025, .05, .1, .5)
+
+#pal <- colorBin("blue2red", domain = popupdata$gov_diff, bins = bins)
+pal <- colorBin("RdBu", domain=popupdata$gov_diff, bins = bins)
+#binpal <- colorBin("RdBu", popupdata$gov_diff, 9)
+
+dem_gov_mean <- leaflet(popupdata) %>%
+  setView(lng= -111.093735, lat = 34.048927, zoom = 7) %>%
+  addProviderTiles(provider = providers$Stamen.TonerLite) %>%
+  addPolygons(stroke = TRUE, weight = 2, color = "black",  fillColor = ~pal(gov_diff), fillOpacity = .8, smoothFactor = 0.5, label=popupdata$label,  
+              labelOptions = labelOptions(opacity = 0.85,
+                                          style = list(
+                                            "font-size" = "12px"
+                                          ))) %>%
+ # addPolylines(data=roads, weight = 3, color = "green") %>%
+  addLegend("bottomright",
+            pal = pal,
+            values = ~gov_diff,
+            title = "Diff from Mean Dem - Gov",
+            opacity = 0.8)
+
+
+##############################################################
+bins <- c(-.5, -.1, -.05, -.025, 0, .025, .05, .1, .5)
+
+#pal <- colorBin("blue2red", domain = popupdata$gov_diff, bins = bins)
+pal <- colorBin("RdBu", domain=popupdata$ussen_diff, bins = bins)
+#binpal <- colorBin("RdBu", popupdata$gov_diff, 9)
+
+dem_ussen_mean <- leaflet(popupdata) %>%
+  setView(lng= -111.093735, lat = 34.048927, zoom = 7) %>%
+  addProviderTiles(provider = providers$Stamen.TonerLite) %>%
+  addPolygons(stroke = TRUE, weight = 2, color = "black", fillColor = ~pal(ussen_diff), fillOpacity = .8, smoothFactor = 0.5, label=popupdata$label,  
+              labelOptions = labelOptions(opacity = 0.85,
+                                          style = list(
+                                            "font-size" = "12px"
+                                          ))) %>%
+  #addPolylines(data=roads, weight = 3, color = "green") %>%
+  addLegend("bottomright",
+            pal = pal,
+            values = ~ussen_diff,
+            title = "Diff from Mean Dem - Sen",
+            opacity = 0.8)
+
+
+
+write.csv(Ducey_Sinema, "ducey_sinema.csv", row.names = FALSE)
+
+
+
+  
   
