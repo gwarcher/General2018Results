@@ -481,22 +481,8 @@ prop127 <- AZ_Precinct_Results %>%
   mutate(total = rowSums(.[2:3])) %>%
   left_join(., az_precincts, by="Pctcd") %>%
   mutate(color = case_when(
-    (No / total) - (Yes /total) >= .6 ~ "#660000",
-    (No / total) - (Yes /total) >= .5 & (No / total) - (Yes /total) < .6 ~ "#881111",
-    (No / total) - (Yes /total) >= .4 & (No / total) - (Yes /total) < .5 ~ "#aa2222",
-    (No / total) - (Yes /total) >= .3 & (No / total) - (Yes /total) < .4 ~ "#cc3333",
-    (No / total) - (Yes /total) >= .2 & (No / total) - (Yes /total) < .3 ~ "#eb4747",
-    (No / total) - (Yes /total) >= .1 & (No / total) - (Yes /total) < .2 ~ "#f58181",
-    (No / total) - (Yes /total) >= .05 & (No / total) - (Yes /total) < .1 ~ "#ffaaae",
-    (No / total) - (Yes /total) >= 0 & (No / total) - (Yes /total) < .05 ~ "#ffd5d9",
-    (Yes /total) - (No / total)  >= .6 ~ "#000066",
-    (Yes /total) - (No / total)  >= .5 & (Yes /total) - (No / total)  < .6 ~ "#111188",
-    (Yes /total) - (No / total)  >= .4 & (Yes /total) - (No / total)  < .5 ~ "#2222aa",
-    (Yes /total) - (No / total)  >= .3 & (Yes /total) - (No / total)  < .4 ~ "#3333cc",
-    (Yes /total) - (No / total)  >= .2 & (Yes /total) - (No / total)  < .3 ~ "#4747eb",
-    (Yes /total) - (No / total)  >= .1 & (Yes /total) - (No / total)  < .2 ~ "#8181f5",
-    (Yes /total) - (No / total)  >= .05 & (Yes /total) - (No / total)  < .1 ~ "#aaaeff",
-    (Yes /total) - (No / total)  >= 0 & (Yes /total) - (No / total)  < .05 ~ "#d5d9ff"
+    (No / total) - (Yes /total) >= 0 ~ "#FF0000",
+        (Yes /total) - (No / total)  >= 0 ~ "#0000FF"
   ))
 
 
@@ -518,19 +504,19 @@ popupdata$label <-   popupdata$label <- paste0('<h4>', popupdata$precinctna, '</
 
 p127 <- leaflet(popupdata) %>%
   setView(lng= -111.093735, lat = 34.048927, zoom = 7) %>%
-  
-  addPolygons(stroke = TRUE, weight = 2, color = popupdata$color, fillOpacity = 1, smoothFactor = 0.5, label=popupdata$label,  
+  addProviderTiles(provider = providers$Stamen.TonerLite) %>%
+  addPolygons(stroke = TRUE, weight = 2, color = popupdata$color, fillOpacity = 0.7, smoothFactor = 0.5, label=popupdata$label,  
               labelOptions = labelOptions(opacity = 0.85,
                                           style = list(
                                             "font-size" = "12px"
                                           ))) %>%
-  addPolylines(data=roads, weight = 3, color = "black") %>%
+  
   addLegend("bottomright",
-            colors = c("#660000", "#881111", "#aa2222", "#cc3333", "#eb4747", "#f58181", "#ffaaae", "#ffd5d9",
-                       "#000066", "#111188", "#2222aa", "#3333cc", "#4747eb", "#8181f5", "#aaaeff", "#d5d9ff",
+            colors = c("#FF0000", 
+                       "#0000FF", 
                        "DFDFDF"),
-            labels = c("No +60%", "+50%", "+40%", "+30%", "+20%", "+10%", "+5%", "+0%",
-                       "Yes + 60%",  "+50%", "+40%", "+30%", "+20%", "+10%", "+5%", "+0%",
+            labels = c("No",
+                       "Yes",
                        "No Votes"),
             title = "Proposition 127",
             opacity = 0.8)
