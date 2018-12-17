@@ -469,5 +469,118 @@ write.csv(Ducey_Sinema, "ducey_sinema.csv", row.names = FALSE)
 
 
 
+
+
+
+#####################prop 127######################################
+
+prop127 <- AZ_Precinct_Results %>%
+  filter(contestLongName == "Proposition 127") %>%
+  select( choiceName, Pctcd, precinctVotes)%>%
+  spread(choiceName, precinctVotes) %>%
+  mutate(total = rowSums(.[2:3])) %>%
+  left_join(., az_precincts, by="Pctcd") %>%
+  mutate(color = case_when(
+    (No / total) - (Yes /total) >= .6 ~ "#660000",
+    (No / total) - (Yes /total) >= .5 & (No / total) - (Yes /total) < .6 ~ "#881111",
+    (No / total) - (Yes /total) >= .4 & (No / total) - (Yes /total) < .5 ~ "#aa2222",
+    (No / total) - (Yes /total) >= .3 & (No / total) - (Yes /total) < .4 ~ "#cc3333",
+    (No / total) - (Yes /total) >= .2 & (No / total) - (Yes /total) < .3 ~ "#eb4747",
+    (No / total) - (Yes /total) >= .1 & (No / total) - (Yes /total) < .2 ~ "#f58181",
+    (No / total) - (Yes /total) >= .05 & (No / total) - (Yes /total) < .1 ~ "#ffaaae",
+    (No / total) - (Yes /total) >= 0 & (No / total) - (Yes /total) < .05 ~ "#ffd5d9",
+    (Yes /total) - (No / total)  >= .6 ~ "#000066",
+    (Yes /total) - (No / total)  >= .5 & (Yes /total) - (No / total)  < .6 ~ "#111188",
+    (Yes /total) - (No / total)  >= .4 & (Yes /total) - (No / total)  < .5 ~ "#2222aa",
+    (Yes /total) - (No / total)  >= .3 & (Yes /total) - (No / total)  < .4 ~ "#3333cc",
+    (Yes /total) - (No / total)  >= .2 & (Yes /total) - (No / total)  < .3 ~ "#4747eb",
+    (Yes /total) - (No / total)  >= .1 & (Yes /total) - (No / total)  < .2 ~ "#8181f5",
+    (Yes /total) - (No / total)  >= .05 & (Yes /total) - (No / total)  < .1 ~ "#aaaeff",
+    (Yes /total) - (No / total)  >= 0 & (Yes /total) - (No / total)  < .05 ~ "#d5d9ff"
+  ))
+
+
+pct <- shp
+pct@data <- left_join(pct@data, prop127, by=c("pctnum" = "Pctcd"))
+
+
+popupdata=pct
+
+popupdata$label <-   popupdata$label <- paste0('<h4>', popupdata$precinctna, '</h4>',
+                                               '<h5>', popupdata$pctnum, '</h5>',
+                                               "County: ", popupdata$COUNTY, '</br>',
+                                               "Congressional: ", popupdata$DistCD, '</br>',
+                                               "Legislative: ", popupdata$DistLD, '</br>',
+                                               "Total Votes: ", popupdata$total, '</br>',
+                                               "No on 127: ", popupdata$No, " (", percent(popupdata$No / popupdata$total), ")", '</br>',
+                                               "Yes on 127: ", popupdata$Yes, " (" ,percent(popupdata$Yes / popupdata$total), ")",'</br>') %>%
+  lapply(HTML)
+
+p127 <- leaflet(popupdata) %>%
+  setView(lng= -111.093735, lat = 34.048927, zoom = 7) %>%
   
+  addPolygons(stroke = TRUE, weight = 2, color = popupdata$color, fillOpacity = 1, smoothFactor = 0.5, label=popupdata$label,  
+              labelOptions = labelOptions(opacity = 0.85,
+                                          style = list(
+                                            "font-size" = "12px"
+                                          ))) %>%
+  addPolylines(data=roads, weight = 3, color = "black") %>%
+  addLegend("bottomright",
+            colors = c("#660000", "#881111", "#aa2222", "#cc3333", "#eb4747", "#f58181", "#ffaaae", "#ffd5d9",
+                       "#000066", "#111188", "#2222aa", "#3333cc", "#4747eb", "#8181f5", "#aaaeff", "#d5d9ff",
+                       "DFDFDF"),
+            labels = c("No +60%", "+50%", "+40%", "+30%", "+20%", "+10%", "+5%", "+0%",
+                       "Yes + 60%",  "+50%", "+40%", "+30%", "+20%", "+10%", "+5%", "+0%",
+                       "No Votes"),
+            title = "Proposition 127",
+            opacity = 0.8)
+
   
+
+
+
+
+#######Precincts Sinema and DOnald won   ####################################
+
+Senate_Potus <- Senate %>%
+  left_join(., POTUS_2018, by = "Pctcd") %>%
+  filter(`Sinema, Kyrsten` >= `McSally, Martha` & Trump >= Clweighton) %>%
+  mutate(Sinema_total = `Sinema, Kyrsten` / total,
+         Trump_total = Trump / (Trump + Clweighton + Other),
+         Diff = Sinema_total - Trump_total) 
+
+
+
+pct <- shp
+pct@data <- left_join(pct@data, Senate_Potus, by=c("pctnum" = "Pctcd"))
+
+
+popupdata=pct
+
+popupdata$label <-   popupdata$label <- paste0('<h4>', popupdata$precinctna, '</h4>',
+                                               '<h5>', popupdata$pctnum, '</h5>',
+                                               "County: ", popupdata$COUNTY, '</br>',
+                                               "Congressional: ", popupdata$DistCD, '</br>',
+                                               "Legislative: ", popupdata$DistLD, '</br>',
+                                               "Total Votes: ", popupdata$total, '</br>',
+                                               "McSally: ", popupdata$`McSally, Martha`, " (", percent(popupdata$`McSally, Martha` / popupdata$total), ")", '</br>',
+                                               "Sinema: ", popupdata$`Sinema, Kyrsten`, " (" ,percent(popupdata$`Sinema, Kyrsten` / popupdata$total), ")",'</br>', ")", '</br>') %>%
+  lapply(HTML)
+
+s <- leaflet(popupdata) %>%
+  setView(lng= -111.093735, lat = 34.048927, zoom = 7) %>%
+  addProviderTiles(provider = providers$Stamen.TonerLite) %>%
+  addPolygons(stroke = TRUE, weight = 2, color = popupdata$color, fillOpacity = 0.7, smoothFactor = 0.5, label=popupdata$label,  
+              labelOptions = labelOptions(opacity = 0.85,
+                                          style = list(
+                                            "font-size" = "12px"
+                                          ))) %>%
+  addLegend("bottomright",
+            colors = c("#660000", "#881111", "#aa2222", "#cc3333", "#eb4747", "#f58181", "#ffaaae", "#ffd5d9",
+                       "#000066", "#111188", "#2222aa", "#3333cc", "#4747eb", "#8181f5", "#aaaeff", "#d5d9ff",
+                       "DFDFDF"),
+            labels = c("McSally +60%", "+50%", "+40%", "+30%", "+20%", "+10%", "+5%", "+0%",
+                       "Sinema + 60%",  "+50%", "+40%", "+30%", "+20%", "+10%", "+5%", "+0%",
+                       "No Returns"),
+            title = "Sinema v McSally",
+            opacity = 0.8)
